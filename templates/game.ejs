@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>GeoHessr</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Acme&display=swap" rel="stylesheet">
+    
+    <link type="text/css" rel="stylesheet" href="/css/custom.css">
+</head>
+<body class="antialiased">
+    <div id="wrap-loader">
+        <p>Téléportation en cours</p>
+        <div id="loader"></div>
+    </div>
+    
+    <div class="main">
+        <div id="pano"></div>
+        
+        <div class="minimap">
+            <div id="map"></div>
+            <button id="guessButton" style="display: none;">Deviner</button>
+        </div>
+        
+        <div id="endRound" class="modal">
+            <div class="modal-content">
+                <h2>Round terminé !</h2>
+                <p>Vous étiez à</p>
+                <h4 id="guessDistance"></h4>
+                
+                <div id="resultMap"></div>
+                
+                <button id="nextRound">Round suivant</button>
+            </div>
+        </div>
+        
+        <div id="loseRound" class="modal">
+            <div class="modal-content">
+                <h2>Round terminé !</h2>
+                <p>Vous n'avez pas réussi à trouver</p>
+                
+                <div id="resultMapLose"></div>
+                
+                <button id="nextRoundLose">Round suivant</button>
+            </div>
+        </div>
+        
+        <div class="topbar">
+            <div class="timer">
+                <div id="timeDis">02:30</div>
+            </div>
+            <div class="exit">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32px" height="32px">
+                    <path
+                    d="M 5 3 C 3.9069372 3 3 3.9069372 3 5 L 3 19 C 3 20.093063 3.9069372 21 5 21 L 19 21 C 20.093063 21 21 20.093063 21 19 L 21 5 C 21 3.9069372 20.093063 3 19 3 L 5 3 z M 5 5 L 19 5 L 19 10.585938 L 15.707031 7.2929688 L 14.292969 8.7070312 L 16.585938 11 L 9 11 L 9 13 L 16.585938 13 L 14.292969 15.292969 L 15.707031 16.707031 L 19 13.414062 L 19 19 L 5 19 L 5 5 z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/game.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=<%= apiKey %>&callback=generateRandomPoint&v=weekly&source=outdoor&libraries=places&language=fr" async defer></script>
+</body>
+</html>
