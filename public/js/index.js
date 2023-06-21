@@ -89,9 +89,10 @@ socket.on('connect', () => {
 });
 
 // Écoute l'événement "player-joined" pour afficher le nom du joueur qui a rejoint
-socket.on('player-joined', (pseudo) => {
+socket.on('player-joined', ({ id, pseudo }) => {
     const playersList = document.getElementById('room-players');
     const listItem = document.createElement('li');
+    listItem.setAttribute('data-player-id', id);
     listItem.textContent = pseudo;
     playersList.appendChild(listItem);
 });
@@ -114,9 +115,9 @@ socket.on('salon-joined', ({ code, salon }) => {
     salon.players.forEach((player) => {
         // Vérifier si le joueur n'est pas le créateur du salon
         if (player.pseudo !== salon.creator && player.id !== socket.id) {
-            roomPlayersElement.innerHTML += `<li>${player.pseudo}</li>`;
+            roomPlayersElement.innerHTML += `<li data-player-id="${player.id}">${player.pseudo}</li>`;
         } else if (player.id === socket.id) {
-            roomPlayersElement.innerHTML += `<li>${player.pseudo} (vous)</li>`;
+            roomPlayersElement.innerHTML += `<li data-player-id="${player.id}">${player.pseudo} (vous)</li>`;
         }
     });
 });
@@ -124,4 +125,23 @@ socket.on('salon-joined', ({ code, salon }) => {
 // Écoute l'événement "pseudo-taken" pour afficher une alerte
 socket.on('pseudo-taken', (pseudo) => {
     alert(`Le pseudo "${pseudo}" est déjà utilisé dans le salon. Veuillez choisir un autre pseudo.`);
+});
+
+// Écoute l'événement "player-left" pour supprimer le joueur qui a quitté
+socket.on('player-left', (playerId) => {
+    const playersList = document.getElementById('room-players');
+    const playerItem = document.querySelector(`li[data-player-id="${playerId}"]`);
+    
+    if (playerItem) {
+        playersList.removeChild(playerItem);
+    }
+});
+
+// Écoute l'événement "host-disconnected" pour déconnecter les autres joueurs de la room
+socket.on('host-disconnected', () => {
+    alert('L\'hôte du salon a quitté. Vous allez être redirigé vers la page d\'accueil.');
+
+    // Rediriger les joueurs vers la page 2
+    document.getElementById('page2').style.display = 'flex';
+    document.getElementById('page3').style.display = 'none';
 });

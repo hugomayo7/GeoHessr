@@ -74,6 +74,9 @@ io.on('connection', (socket) => {
             players: [{ id: socket.id, pseudo }],
         };
         
+        // Rejoindre la room correspondant au code du salon
+        socket.join(code);
+        
         // Ajoute le salon à la liste des salons
         salons.push(salon);
         
@@ -104,6 +107,9 @@ io.on('connection', (socket) => {
             return;
         }
         
+        // Rejoindre la room correspondant au code du salon
+        socket.join(code);
+        
         // Ajoute le joueur au salon
         salon.players.push({ id: socket.id, pseudo });
         
@@ -111,7 +117,7 @@ io.on('connection', (socket) => {
         salon.players.forEach((player) => {
             if (player.id !== socket.id) {
                 const participantSocket = io.sockets.sockets.get(player.id);
-                participantSocket.emit('player-joined', pseudo);
+                participantSocket.emit('player-joined', { id: socket.id, pseudo });
             }
         });
         
@@ -121,5 +127,40 @@ io.on('connection', (socket) => {
         // Informe tous les clients que le salon a été mis à jour
         io.emit('salon-list-updated', salons);
     });
+    
+    // Écoute l'événement de déconnexion de la socket
+    socket.on('disconnect', () => {
+        // Recherche le salon auquel le joueur est associé
+        const salon = salons.find((s) => s.players.some((player) => player.id === socket.id));
+        
+        // Si le joueur est associé à un salon
+        if (salon) {
+            // Vérifier si le joueur est l'hôte du salon
+            if (salon.creator === salon.players.find(player => player.id === socket.id).pseudo) {
+                // Supprimer le salon
+                const salonIndex = salons.indexOf(salon);
+                salons.splice(salonIndex, 1);
+                
+                // Informer les autres joueurs du salon que l'hôte s'est déconnecté
+                socket.to(salon.code).emit('host-disconnected');
+                
+                // Informer tous les clients que la liste des salons a été mise à jour
+                io.emit('salon-list-updated', salons);
+            } else {
+                // Supprimer le joueur du salon
+                const updatedPlayers = salon.players.filter((player) => player.id !== socket.id);
+                
+                // Informer les autres joueurs du salon qu'un joueur a quitté
+                socket.broadcast.to(salon.code).emit('player-left', socket.id);
+                
+                // Mettre à jour la liste des joueurs dans le salon
+                salon.players = updatedPlayers;
+                
+                // Informer tous les clients que le salon a été mis à jour
+                io.emit('salon-list-updated', salons);
+            }
+        }
+    });
+    
     
 });
