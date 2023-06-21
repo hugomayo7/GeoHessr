@@ -28,16 +28,16 @@
         <div class="forms">
             <div class="group">
                 <h2>Créer une salle</h2>
-                <form id="create-room-form" method="POST">
-                    <label for="room-name-create">Pseudo:</label>
-                    <input type="text" id="room-name-create" name="room-name-create" required>
-                    <button type="submit">Créer</button>
-                </form>
+                <label for="roomNameCreate">Pseudo:</label>
+                <input type="text" id="roomNameCreate" name="roomNameCreate" required>
+                <button id="createRoomButton">Créer</button>
             </div>
             <div class="separate"></div>
             <div class="group" id="rooms-card">
                 <h2>Rejoindre une salle</h2>
-                <ul id="rooms-list"></ul>
+                <label for="roomNameJoin">Pseudo:</label>
+                <input type="text" id="roomNameJoin" name="roomNameJoin" required>
+                <ul id="roomsList"></ul>
             </div>
         </div>
         <div class="close-modal">

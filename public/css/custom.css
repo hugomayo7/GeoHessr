@@ -320,6 +320,20 @@ form input {
     width: 200px;
 }
 
+#rooms-card input {
+    width: 200px;
+    margin-bottom: 20px;
+}
+
+#rooms-card h2 {
+    font-size: 24px;
+}
+
+#rooms-card * {
+    margin: 5px 0;
+    font-size: 18px;
+}
+
 .separate {
     width: 1px;
     height: 100%;

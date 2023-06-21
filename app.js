@@ -37,80 +37,89 @@ app.get('/game', (req, res) => {
     res.render('game', { apiKey });
 });
 
+// obtenir les salons existants
+app.get('/salons', (req, res) => {
+    res.json(salons);
+});
 
 http.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-let rooms = [];
+// Tableau pour stocker les salons
+const salons = [];
 
 io.on('connection', (socket) => {
     
-    socket.on('createRoom', (player) => {
-        let room = null;
-        
-        if (!player.roomId) {
-            room = createRoom(player);
-        } else {
-            room = rooms.find((r) => r.id === player.roomId);
-            
-            if (room === undefined) {
-                return;
-            }
-            
-            player.roomId = room.id;
-            room.players.push(player);
+    // Génère un code de salon aléatoire
+    const generateSalonCode = () => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            code += characters.charAt(randomIndex);
         }
+        return code;
+    };
+    
+    // Écoute l'événement "create-salon" lorsqu'un utilisateur clique sur "Créer"
+    socket.on('create-salon', (pseudo) => {
+        // Génère un nouveau code de salon
+        const code = generateSalonCode();
         
-        socket.join(room.id);
+        // Crée un objet pour représenter le salon
+        const salon = {
+            code,
+            creator: pseudo,
+            players: [{ id: socket.id, pseudo }],
+        };
         
-        io.emit('roomCreated', room);
+        // Ajoute le salon à la liste des salons
+        salons.push(salon);
+        
+        // Envoie le code du salon au client
+        socket.emit('salon-created', code);
+        
+        // Informe tous les clients qu'un nouveau salon a été créé
+        io.emit('salon-list-updated-server', salons);
     });
     
-    socket.on('getRooms', () => {
-        io.emit('listRooms', rooms);
+    // Écoute l'événement "join-salon" lorsqu'un utilisateur clique sur "Rejoindre"
+    socket.on('join-salon', (data) => {
+        const { code, pseudo } = data;
+        
+        // Vérifie si le salon existe
+        const salon = salons.find((s) => s.code === code);
+        if (!salon) {
+            console.log(`Salon ${code} non trouvé`);
+            // Salon non trouvé, tu peux gérer cette situation comme tu le souhaites
+            return;
+        }
+        
+        // Vérifie si le pseudo est déjà utilisé dans le salon
+        const isPseudoTaken = salon.players.some((player) => player.pseudo === pseudo);
+        if (isPseudoTaken) {
+            // Le pseudo est déjà pris, envoie une alerte au client
+            socket.emit('pseudo-taken', pseudo);
+            return;
+        }
+        
+        // Ajoute le joueur au salon
+        salon.players.push({ id: socket.id, pseudo });
+        
+        // Informe les joueurs du salon qu'un joueur a rejoint (sauf le joueur qui rejoint)
+        salon.players.forEach((player) => {
+            if (player.id !== socket.id) {
+                const participantSocket = io.sockets.sockets.get(player.id);
+                participantSocket.emit('player-joined', pseudo);
+            }
+        });
+        
+        // Envoie les informations du salon au joueur qui a rejoint
+        socket.emit('salon-joined', { code, salon });
+        
+        // Informe tous les clients que le salon a été mis à jour
+        io.emit('salon-list-updated', salons);
     });
     
-    socket.on('disconnect', () => {
-        let roomIndex = -1;
-      
-        for (let i = 0; i < rooms.length; i++) {
-          const room = rooms[i];
-      
-          for (let j = 0; j < room.players.length; j++) {
-            const player = room.players[j];
-      
-            if (player.socketId === socket.id && player.host) {
-              roomIndex = i;
-              break;
-            }
-          }
-      
-          if (roomIndex !== -1) {
-            break;
-          }
-        }
-      
-        if (roomIndex !== -1) {
-          const room = rooms[roomIndex];
-          rooms.splice(roomIndex, 1);
-          io.emit('roomRemoved', room.id); // Envoyer à tous les sockets
-          io.in(room.id).socketsLeave(room.id); // Faire quitter tous les sockets de la salle
-        }
-      });
 });
-
-function createRoom(player) {
-    const room = { id: roomId(), players: [] };
-    
-    player.roomId = room.id;
-    
-    room.players.push(player);
-    rooms.push(room);
-    
-    return room;
-}
-
-function roomId() {
-    return Math.random().toString(36).substr(2, 9);
-}
