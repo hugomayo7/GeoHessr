@@ -39,6 +39,7 @@ socket.on('salon-created', (code) => {
     document.getElementById('page3').style.display = 'flex';
     document.getElementById('host-name').textContent = pseudoInputCreate.value;
     document.getElementById('room-players').innerHTML = `<li>${pseudoInputCreate.value} (vous)</li>`;
+    document.getElementsByClassName('buttons-wait')[0].innerHTML += `<div id="start"><button type="button">Lancer</button></div>`;
 });
 
 // Met à jour la liste des salons sur la page

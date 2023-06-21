@@ -447,3 +447,13 @@ li {
 #room-players * {
     font-size: 28px !important;
 }
+
+.buttons-wait {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.buttons-wait button {
+    margin: 0 10px;
+}
