@@ -4,18 +4,21 @@ const createRoomButton = document.getElementById('createRoomButton');
 const pseudoInputCreate = document.getElementById('roomNameCreate')
 const pseudoInputJoin = document.getElementById('roomNameJoin')
 const salonList = document.getElementById('roomsList');
+const page1 = document.getElementById('page1');
+const page2 = document.getElementById('page2');
+const page3 = document.getElementById('page3');
 
 document.getElementById('multi').addEventListener('click', function () {
-    document.getElementById('page1').style.display = 'none';
-    document.getElementById('page2').style.display = 'flex';
+    page1.style.display = 'none';
+    page2.style.display = 'flex';
 });
 
 document.getElementsByClassName('close-modal')[0].addEventListener('click', function () {
-    document.getElementById('page1').style.display = 'flex';
-    document.getElementById('page2').style.display = 'none';
+    page1.style.display = 'flex';
+    page2.style.display = 'none';
 });
 
-document.getElementsByClassName('leave')[0].addEventListener('click', function () {
+document.getElementById('leaveButton').addEventListener('click', function () {
     window.location.href = "/";
 });
 
@@ -35,11 +38,20 @@ createRoomButton.addEventListener('click', () => {
 
 // Écoute l'événement "salon-created" pour recevoir le code du salon
 socket.on('salon-created', (code) => {
-    document.getElementById('page2').style.display = 'none';
-    document.getElementById('page3').style.display = 'flex';
+    page2.style.display = 'none';
+    page3.style.display = 'flex';
     document.getElementById('host-name').textContent = pseudoInputCreate.value;
     document.getElementById('room-players').innerHTML = `<li>${pseudoInputCreate.value} (vous)</li>`;
-    document.getElementsByClassName('buttons-wait')[0].innerHTML += `<div id="start"><button type="button">Lancer</button></div>`;
+    let startButton = document.getElementsByClassName('buttons-wait')[0]
+    startButton.innerHTML += `<div id="start"><button type="button">Lancer</button></div>`;
+    
+    document.getElementById('leaveButton').addEventListener('click', function () {
+        window.location.href = "/";
+    });
+    
+    startButton.addEventListener('click', function () {
+        socket.emit('start-game', code);
+    });
 });
 
 // Met à jour la liste des salons sur la page
@@ -48,7 +60,7 @@ const updateSalonList = (salons) => {
     
     salons.forEach((salon) => {
         const listItem = document.createElement('li');
-        listItem.innerText = `Salon ${salon.code}`;
+        listItem.innerText = `Salon de ${salon.players[0].pseudo}`;
         
         const joinButton = document.createElement('button');
         joinButton.innerText = 'Rejoindre';
@@ -100,8 +112,8 @@ socket.on('player-joined', ({ id, pseudo }) => {
 
 // Écoute l'événement "salon-joined" pour afficher les informations du salon
 socket.on('salon-joined', ({ code, salon }) => {
-    document.getElementById('page2').style.display = 'none';
-    document.getElementById('page3').style.display = 'flex';
+    page2.style.display = 'none';
+    page3.style.display = 'flex';
     
     const hostNameElement = document.getElementById('host-name');
     const roomPlayersElement = document.getElementById('room-players');
@@ -141,8 +153,18 @@ socket.on('player-left', (playerId) => {
 // Écoute l'événement "host-disconnected" pour déconnecter les autres joueurs de la room
 socket.on('host-disconnected', () => {
     alert('L\'hôte du salon a quitté. Vous allez être redirigé vers la page d\'accueil.');
-
+    
     // Rediriger les joueurs vers la page 2
-    document.getElementById('page2').style.display = 'flex';
-    document.getElementById('page3').style.display = 'none';
+    page2.style.display = 'flex';
+    page3.style.display = 'none';
+});
+
+// Écouter l'événement 'game-started' côté client
+socket.on('game-started', () => {
+
+});
+
+socket.on('game-start-failed', (errorMessage) => {
+    // Afficher le message d'erreur à l'hôte du salon
+    alert(errorMessage);
 });

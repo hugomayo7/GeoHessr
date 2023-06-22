@@ -29,6 +29,8 @@ app.use('/bootstrap/js', express.static(path.join(__dirname, 'node_modules/boots
 app.use('/jquery', express.static(path.join(__dirname, 'node_modules/jquery/dist')));
 app.use(express.static('public'));
 
+app.get('/favicon.ico', (req, res) => res.status(204));
+
 app.get('/', (req, res) => {
     res.render('index');
 });
@@ -162,5 +164,23 @@ io.on('connection', (socket) => {
         }
     });
     
+    // Écoute de l'événement "start-game" émis par l'hôte du salon
+    socket.on('start-game', (salonCode) => {
+        const salon = salons.find((s) => s.code === salonCode);
+        const joueur = salon.players.find((player) => player.id === socket.id);
+        
+        if (joueur && joueur.pseudo === salon.creator) {
+            if (salon.players.length <= 1) {
+                // Envoi d'un message d'erreur à l'hôte du salon
+                socket.emit('game-start-failed', 'Vous ne pouvez pas lancer la partie car vous êtes seul dans le salon.');
+            } else {
+                // Marquer le salon comme étant en cours de jeu
+                salon.inProgress = true;
+                
+                // Informer tous les joueurs du salon que la partie a commencé
+                io.to(salonCode).emit('game-started', /* Données nécessaires pour la vision du jeu */);
+            }
+        }
+    });
     
 });
