@@ -5,6 +5,7 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const path = require('path');
+const axios = require('axios');
 const { emit } = require('process');
 const port = 8080;
 
@@ -74,6 +75,7 @@ io.on('connection', (socket) => {
             code,
             creator: pseudo,
             players: [{ id: socket.id, pseudo }],
+            inProgress: false,
         };
         
         // Rejoindre la room correspondant au code du salon
@@ -177,10 +179,36 @@ io.on('connection', (socket) => {
                 // Marquer le salon comme étant en cours de jeu
                 salon.inProgress = true;
                 
-                // Informer tous les joueurs du salon que la partie a commencé
-                io.to(salonCode).emit('game-started', /* Données nécessaires pour la vision du jeu */);
+                // Générer des coordonnées et les renvoyer à tous les joueurs du salon
+                const coords = generateCoords().then((coords) => {;
+                    io.to(salonCode).emit('game-started', coords)
+                });
+
+                io.to(salonCode).emit('game-loading');
             }
         }
     });
-    
 });
+
+async function generateCoords() {
+    let lat, lng;
+    let validCoords = false;
+    
+    do {
+        lat = Math.random() * 180 - 90;
+        lng = Math.random() * 360 - 180;
+        
+        const streetViewURL = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${apiKey}`;
+        
+        const response = await axios.get(streetViewURL);
+        const data = response.data;
+        
+        console.log(data);
+        
+        if (data.status === 'OK' && data.copyright === '© Google') {
+            validCoords = true;
+        }
+    } while (!validCoords);
+    
+    return { lat, lng };
+}

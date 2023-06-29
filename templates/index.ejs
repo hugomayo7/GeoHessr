@@ -15,6 +15,10 @@
     <link type="text/css" rel="stylesheet" href="/css/custom.css">
 </head>
 <body class="antialiased">
+    <div id="wrap-loader">
+        <p>Téléportation en cours</p>
+        <div id="loader"></div>
+    </div>
     
     <div id="page1" class="container">
         <h1 class="title">GeoHessr</h1>
@@ -65,11 +69,7 @@
         </div>
     </div>
 
-    <div class="page4">
-        <div id="wrap-loader">
-            <p>Téléportation en cours</p>
-            <div id="loader"></div>
-        </div>
+    <div id="page4">
         
         <div class="main">
             <div id="pano"></div>
@@ -116,6 +116,8 @@
         </div>
     </div>
     
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBN8UF76_AeYmwsB6ssmbfAkCyVRBwjMUU&v=weekly&source=outdoor&libraries=places&language=fr" async defer></script>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/index.js"></script>
 </body>

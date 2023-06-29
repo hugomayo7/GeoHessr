@@ -115,7 +115,7 @@ p {
     height: 100%;
     left: 0;
     top: 0;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 99999;
@@ -466,6 +466,8 @@ li {
     margin-left: 15px;
 }
 
-.page4 {
+#page4 {
     display: none;
+    width: 100%;
+    height: 100%;
 }
