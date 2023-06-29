@@ -176,6 +176,7 @@ socket.on('host-disconnected', () => {
     // Rediriger les joueurs vers la page 2
     page2.style.display = 'flex';
     page3.style.display = 'none';
+    page4.style.display = 'none';
 });
 
 // Écouter l'événement 'game-started' côté client
@@ -191,94 +192,203 @@ socket.on('game-start-failed', (errorMessage) => {
     alert(errorMessage);
 });
 
-function initStreetView(data, status) {
-    console.log(data, status)
-    if (status === google.maps.StreetViewStatus.OK && data.copyright === "© 2023 Google") {
-        originalPos = data.location.latLng;
-
-        // clearInterval(interval);
-        // countdown()
-
-        loader.style.display = 'none';
-        page3.style.display = 'none';
-        page4.style.display = 'flex';
-
-        if (panorama) {
-            panorama.setPosition(data.location.latLng);
-        } else {
-            panorama = new google.maps.StreetViewPanorama(
-                document.getElementById("pano"), {
-                    position: data.location.latLng,
-                    pov: {
-                        heading: 310,
-                        pitch: 1
-                    },
-                    addressControl: false,
-                    showRoadLabels: false,
-                    fullscreenControl: false,
-                    keyboardShortcuts: false,
-                    zoomControlOptions: {
-                        position: google.maps.ControlPosition.RIGHT_TOP,
-                    },
-                }
-            );
-        }
-
-        if (minimap) {
-            if (guessMarker) {
-                guessMarker.setMap(null);
-            }
-
-            minimap.panTo(new google.maps.LatLng(0, 0));
-            minimap.setZoom(1);
-        } else {
-            minimap = new google.maps.Map(
-                document.getElementById("map"),
-                {
-                    center: new google.maps.LatLng(0, 0),
-                    zoom: 1,
-                    disableDefaultUI: true,
-                    keyboardShortcuts: false,
-                    clickableIcons: false,
-                    draggableCursor: 'pointer',
-                    draggingCursor: 'grabbing',
-                }
-            );
-        }
-
-        // Ajouter un gestionnaire d'événements "click" sur la carte
-        minimap.addListener("click", function (event) {
-            // Supprimer le marqueur précédent s'il existe
-            if (guessMarker) {
-                guessMarker.setMap(null);
-            }
-
-            // Créer un nouveau marqueur à l'emplacement du clic
-            guessMarker = new google.maps.Marker({
-                position: event.latLng,
-                map: minimap
-            });
-
-            // Afficher le bouton "Deviner"
-            guessButton.style.display = "block";
-        });
-
-        document.getElementsByClassName("minimap")[0].style.display = "block";
-        document.getElementById("pano").style.display = "block";
-
-        setTimeout(function () {
-            loader.style.display = "none";
-        }, 500);
-
-    } else if (status === google.maps.StreetViewStatus.OVER_QUERY_LIMIT) {
-        console.log('LIMIT QUOTA')
-    } else {
-        // generateRandomPoint();
-        socket.emit('generate-random-points', salonCode);
-        loader.style.display = "flex";
-    }
-}
-
 socket.on('game-loading', () => {
     loader.style.display = 'flex';
 });
+
+socket.on('round-ended', (players) => {
+    clearInterval(interval);
+
+    players.forEach((player) => {
+        if (player.id === socket.id) {
+            // Afficher la distance du joueur actuel
+            document.getElementById('guessDistance').textContent = `${player.distance.toFixed(1)} km`;
+        }
+    });
+
+    document.getElementById("endRound").style.display = "flex";
+    document.getElementById("endRound").style.zIndex = "99999999";
+    document.getElementsByClassName("minimap")[0].style.display = "none";
+
+    resultMap = new google.maps.Map(
+        document.getElementById("resultMap"),
+        {
+            center: new google.maps.LatLng(0, 0),
+            zoom: 1,
+            disableDefaultUI: true,
+            keyboardShortcuts: false,
+            clickableIcons: false,
+            draggableCursor: 'cursor',
+            draggingCursor: 'grabbing',
+        }
+    );
+
+    // créer marker original
+    let originalMarker = new google.maps.Marker({
+        position: {
+            lat: originalPos.lat(),
+            lng: originalPos.lng()
+        },
+        map: resultMap,
+    });
+
+    // afficher le marker de chaque joueur
+    players.forEach((player) => {
+        new google.maps.Marker({
+            position: player.guessPos,
+            map: resultMap,
+            icon: {
+                url: `https://ui-avatars.com/api/?name=${player.pseudo}&rounded=true&background=${player.color}&color=fff`,
+                scaledSize: new google.maps.Size(35, 38),
+            }
+        });
+    });
+})
+
+function initStreetView(data) {
+    originalPos = data.location.latLng;
+
+    clearInterval(interval);
+    countdown()
+
+    loader.style.display = 'none';
+    page3.style.display = 'none';
+    page4.style.display = 'flex';
+
+    if (panorama) {
+        panorama.setPosition(data.location.latLng);
+    } else {
+        panorama = new google.maps.StreetViewPanorama(
+            document.getElementById("pano"), {
+                position: data.location.latLng,
+                pov: {
+                    heading: 310,
+                    pitch: 1
+                },
+                addressControl: false,
+                showRoadLabels: false,
+                fullscreenControl: false,
+                keyboardShortcuts: false,
+                zoomControlOptions: {
+                    position: google.maps.ControlPosition.RIGHT_TOP,
+                },
+            }
+        );
+    }
+
+    if (minimap) {
+        if (guessMarker) {
+            guessMarker.setMap(null);
+        }
+
+        minimap.panTo(new google.maps.LatLng(0, 0));
+        minimap.setZoom(1);
+    } else {
+        minimap = new google.maps.Map(
+            document.getElementById("map"),
+            {
+                center: new google.maps.LatLng(0, 0),
+                zoom: 1,
+                disableDefaultUI: true,
+                keyboardShortcuts: false,
+                clickableIcons: false,
+                draggableCursor: 'pointer',
+                draggingCursor: 'grabbing',
+            }
+        );
+    }
+
+    // Ajouter un gestionnaire d'événements "click" sur la carte
+    minimap.addListener("click", function (event) {
+        // Supprimer le marqueur précédent s'il existe
+        if (guessMarker) {
+            guessMarker.setMap(null);
+        }
+
+        // Créer un nouveau marqueur à l'emplacement du clic
+        guessMarker = new google.maps.Marker({
+            position: event.latLng,
+            map: minimap
+        });
+
+        // Afficher le bouton "Deviner"
+        guessButton.style.display = "block";
+    });
+
+    document.getElementsByClassName("minimap")[0].style.display = "block";
+    document.getElementById("pano").style.display = "block";
+
+    setTimeout(function () {
+        loader.style.display = "none";
+    }, 500);    
+}
+
+async function countdown() {
+    let seconds = 150; // 3 minutes en secondes
+
+    return new Promise((resolve, reject) => {
+        interval = setInterval(() => {
+            if (seconds === 0) {
+                clearInterval(interval)
+                loseRoundScreen()
+            } else if (stopCount) {
+                clearInterval(interval)
+                resolve();
+            }
+
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+
+            timeDis.innerHTML = "<span class='time' style='color: white;'>" +
+                (minutes < 10 ? "0" : "") +
+                minutes +
+                ":" +
+                (remainingSeconds < 10 ? "0" : "") +
+                remainingSeconds +
+                "</span>";
+
+            seconds--;
+        }, 1000);
+    });
+}
+
+function calcDistance(lat1, lat2, lon1, lon2) {
+    lon1 = lon1 * Math.PI / 180;
+    lon2 = lon2 * Math.PI / 180;
+    lat1 = lat1 * Math.PI / 180;
+    lat2 = lat2 * Math.PI / 180;
+
+    let dlon = lon2 - lon1;
+    let dlat = lat2 - lat1;
+    let a = Math.pow(Math.sin(dlat / 2), 2)
+        + Math.cos(lat1) * Math.cos(lat2)
+        * Math.pow(Math.sin(dlon / 2), 2);
+
+    let c = 2 * Math.asin(Math.sqrt(a));
+
+    let r = 6371;
+
+    return c * r;
+}
+
+function validGuess(guessPos, originalPos) {
+    let distance = calcDistance(guessPos.lat(), originalPos.lat(), guessPos.lng(), originalPos.lng());
+
+    socket.emit('player-guess', distance, salonCode, guessPos);
+}
+
+// guess position
+guessButton.addEventListener("click", function () {
+    if (guessMarker) {
+        stopCount = true;
+        const markerPosition = guessMarker.getPosition();
+
+        validGuess(markerPosition, originalPos);
+    }
+});
+
+document.getElementsByClassName('exit')[0].addEventListener('click', function () {
+    if (window.confirm('Voulez-vous vraiment quitter la partie ?')) {
+        window.location.href = '/';
+    }
+})

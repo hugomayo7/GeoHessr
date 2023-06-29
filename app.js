@@ -74,9 +74,11 @@ io.on('connection', (socket) => {
         const salon = {
             code,
             creator: pseudo,
-            players: [{ id: socket.id, pseudo }],
+            players: [{ id: socket.id, pseudo, guess: false, distance: null, guessPos: null, color: generatePlayerColor() }],
             inProgress: false,
         };
+
+        console.log(salon.players)
         
         // Rejoindre la room correspondant au code du salon
         socket.join(code);
@@ -121,7 +123,7 @@ io.on('connection', (socket) => {
         salon.players.forEach((player) => {
             if (player.id !== socket.id) {
                 const participantSocket = io.sockets.sockets.get(player.id);
-                participantSocket.emit('player-joined', { id: socket.id, pseudo });
+                participantSocket.emit('player-joined', { id: socket.id, pseudo, color: generatePlayerColor() });
             }
         });
         
@@ -183,9 +185,22 @@ io.on('connection', (socket) => {
                 const coords = generateCoords().then((coords) => {;
                     io.to(salonCode).emit('game-started', coords)
                 });
-
+                
                 io.to(salonCode).emit('game-loading');
             }
+        }
+    });
+    
+    socket.on('player-guess', (distance, salonCode, guessPos) => {
+        
+        const salon = salons.find((s) => s.code === salonCode);
+        const joueur = salon.players.find((player) => player.id === socket.id);
+        joueur.guess = true;
+        joueur.distance = distance;
+        joueur.guessPos = guessPos
+        
+        if (salon.players.every((player) => player.guess)) {
+            io.to(salonCode).emit('round-ended', salon.players);
         }
     });
 });
@@ -203,8 +218,6 @@ async function generateCoords() {
         const response = await axios.get(streetViewURL);
         const data = response.data;
         
-        console.log(data);
-        
         if (data.status === 'OK' && data.copyright === '© Google') {
             validCoords = true;
         }
@@ -212,3 +225,16 @@ async function generateCoords() {
     
     return { lat, lng };
 }
+
+function generatePlayerColor() {
+    // Générer trois valeurs RGB aléatoires entre 0 et 255
+    const r = Math.floor(Math.random() * 256);
+    const g = Math.floor(Math.random() * 256);
+    const b = Math.floor(Math.random() * 256);
+  
+    // Convertir les valeurs RGB en une couleur hexadécimale
+    const color = ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  
+    return color;
+  }
+  
