@@ -33,7 +33,7 @@ app.use(express.static('public'));
 app.get('/favicon.ico', (req, res) => res.status(204));
 
 app.get('/', (req, res) => {
-    res.render('index');
+    res.render('index', { apiKey });
 });
 
 app.get('/game', (req, res) => {
