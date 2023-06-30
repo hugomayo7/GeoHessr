@@ -41,13 +41,13 @@ document.getElementById('leaveButton').addEventListener('click', function () {
 // Gestion du clic sur le bouton "Créer"
 createRoomButton.addEventListener('click', () => {
     const pseudo = pseudoInputCreate.value;
-    
+
     // Vérifie si le pseudo est vide
     if (pseudo === '') {
         alert('Veuillez saisir un pseudo.');
         return;
     }
-    
+
     // Émet un événement "create-salon" au serveur avec le pseudo de l'utilisateur
     socket.emit('create-salon', pseudo);
 });
@@ -61,39 +61,39 @@ socket.on('salon-created', (code) => {
     document.getElementById('room-players').innerHTML = `<li>${pseudoInputCreate.value} (vous)</li>`;
     let startButton = document.getElementsByClassName('buttons-wait')[0]
     startButton.innerHTML += `<div id="start"><button type="button">Lancer</button></div>`;
-    
+
     document.getElementById('leaveButton').addEventListener('click', function () {
         window.location.href = "/";
     });
-    
+
     startButton.addEventListener('click', function () {
         socket.emit('start-game', code);
     });
 });
 
 // Met à jour la liste des salons sur la page
-const updateSalonList = (salons) => { 
+const updateSalonList = (salons) => {
     salonList.innerHTML = '';
-    
+
     salons.forEach((salon) => {
         const listItem = document.createElement('li');
         listItem.innerText = `Salon de ${salon.players[0].pseudo}`;
-        
+
         const joinButton = document.createElement('button');
         joinButton.innerText = 'Rejoindre';
         joinButton.addEventListener('click', () => {
             const pseudo = pseudoInputJoin.value;
-            
+
             // Vérifie si le pseudo est vide
             if (pseudo === '') {
                 alert('Veuillez saisir un pseudo.');
                 return;
             }
-            
+
             // Émet un événement "join-salon" au serveur avec le code du salon et le pseudo de l'utilisateur
-            socket.emit('join-salon', { code: salon.code, pseudo });
+            socket.emit('join-salon', {code: salon.code, pseudo});
         });
-        
+
         listItem.appendChild(joinButton);
         salonList.appendChild(listItem);
     });
@@ -112,14 +112,14 @@ socket.on('salon-list-updated-server', (salons) => {
 // Appel initial pour obtenir la liste des salons existants
 socket.on('connect', () => {
     fetch('/salons')
-    .then((response) => response.json())
-    .then((data) => {
-        updateSalonList(data);
-    });
+        .then((response) => response.json())
+        .then((data) => {
+            updateSalonList(data);
+        });
 });
 
 // Écoute l'événement "player-joined" pour afficher le nom du joueur qui a rejoint
-socket.on('player-joined', ({ id, pseudo }) => {
+socket.on('player-joined', ({id, pseudo}) => {
     const playersList = document.getElementById('room-players');
     const listItem = document.createElement('li');
     listItem.setAttribute('data-player-id', id);
@@ -128,21 +128,21 @@ socket.on('player-joined', ({ id, pseudo }) => {
 });
 
 // Écoute l'événement "salon-joined" pour afficher les informations du salon
-socket.on('salon-joined', ({ code, salon }) => {
+socket.on('salon-joined', ({code, salon}) => {
     salonCode = code;
 
     page2.style.display = 'none';
     page3.style.display = 'flex';
-    
+
     const hostNameElement = document.getElementById('host-name');
     const roomPlayersElement = document.getElementById('room-players');
-    
+
     hostNameElement.textContent = salon.creator;
     roomPlayersElement.innerHTML = ''; // Réinitialiser le contenu de la liste des joueurs
-    
+
     // Afficher le créateur du salon
     roomPlayersElement.innerHTML += `<li>${salon.creator} (hôte)</li>`;
-    
+
     // Parcourir la liste des joueurs et les afficher
     salon.players.forEach((player) => {
         // Vérifier si le joueur n'est pas le créateur du salon
@@ -163,7 +163,7 @@ socket.on('pseudo-taken', (pseudo) => {
 socket.on('player-left', (playerId) => {
     const playersList = document.getElementById('room-players');
     const playerItem = document.querySelector(`li[data-player-id="${playerId}"]`);
-    
+
     if (playerItem) {
         playersList.removeChild(playerItem);
     }
@@ -172,7 +172,7 @@ socket.on('player-left', (playerId) => {
 // Écoute l'événement "host-disconnected" pour déconnecter les autres joueurs de la room
 socket.on('host-disconnected', () => {
     alert('L\'hôte du salon a quitté. Vous allez être redirigé vers la page d\'accueil.');
-    
+
     // Rediriger les joueurs vers la page 2
     page2.style.display = 'flex';
     page3.style.display = 'none';
@@ -182,9 +182,7 @@ socket.on('host-disconnected', () => {
 // Écouter l'événement 'game-started' côté client
 socket.on('game-started', (coords) => {
     let sv = new google.maps.StreetViewService();
-    sv.getPanoramaByLocation(
-        new google.maps.LatLng(coords.lat, coords.lng), 500, initStreetView
-    );
+    sv.getPanoramaByLocation(new google.maps.LatLng(coords.lat, coords.lng), 500, initStreetView);
 });
 
 socket.on('game-start-failed', (errorMessage) => {
@@ -202,7 +200,11 @@ socket.on('round-ended', (players) => {
     players.forEach((player) => {
         if (player.id === socket.id) {
             // Afficher la distance du joueur actuel
-            document.getElementById('guessDistance').textContent = `${player.distance.toFixed(1)} km`;
+            if (player.distance) {
+                document.getElementById('guessDistance').textContent = `${player.distance.toFixed(1)} km`;
+            } else {
+                document.getElementById('guessDistance').previousSibling.previousSibling.textContent = 'Vous n\'avez pas deviné la distance';
+            }
         }
     });
 
@@ -210,8 +212,7 @@ socket.on('round-ended', (players) => {
     document.getElementById("endRound").style.zIndex = "99999999";
     document.getElementsByClassName("minimap")[0].style.display = "none";
 
-    resultMap = new google.maps.Map(
-        document.getElementById("resultMap"),
+    resultMap = new google.maps.Map(document.getElementById("resultMap"),
         {
             center: new google.maps.LatLng(0, 0),
             zoom: 1,
@@ -234,16 +235,93 @@ socket.on('round-ended', (players) => {
 
     // afficher le marker de chaque joueur
     players.forEach((player) => {
-        new google.maps.Marker({
-            position: player.guessPos,
-            map: resultMap,
-            icon: {
-                url: `https://ui-avatars.com/api/?name=${player.pseudo}&rounded=true&background=${player.color}&color=fff`,
-                scaledSize: new google.maps.Size(35, 38),
-            }
-        });
+        if (player.distance) {
+            new google.maps.Marker({
+                position: player.guessPos,
+                map: resultMap,
+                icon: {
+                    url: `https://ui-avatars.com/api/?name=${player.pseudo}&rounded=true&background=${player.color}&color=fff`,
+                    scaledSize: new google.maps.Size(35, 38),
+                }
+            });
+
+            drawLine(resultMap, player.guessPos)
+        }
     });
+
+    zoomOnResult(resultMap, players)
 })
+
+function drawLine(map, playerPos) {
+    // Création de la ligne entre les deux points
+    let line = new google.maps.Polyline({
+        path: [playerPos, originalPos],
+        strokeColor: "transparent",
+        strokeOpacity: 0,
+        icons: [{
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                fillOpacity: 1,
+                fillColor: "#000000",
+                strokeOpacity: 1,
+                strokeColor: "#000000",
+                strokeWeight: 2,
+                scale: 2
+            },
+            offset: "0",
+            repeat: "10px"
+        }],
+        map: map
+    });
+
+    // Animation du tracé de la ligne
+    let lineAnimation = 0;
+    let lineAnimationInterval = setInterval(function () {
+        line.setOptions({
+            strokeOpacity: lineAnimation
+        });
+        lineAnimation += 0.1;
+        if (lineAnimation >= 1) {
+            clearInterval(lineAnimationInterval);
+        }
+    }, 500);
+
+    line.setMap(map);
+}
+
+function zoomOnResult(map, players) {
+    let bounds = new google.maps.LatLngBounds();
+    players.forEach(player => {
+        bounds.extend(player.guessPos);
+    });
+    bounds.extend(originalPos);
+
+    map.fitBounds(bounds);
+
+    let zoomLevel = map.getZoom() - 8;
+
+    let zoomAnimationInterval = setInterval(function () {
+        if (map.getZoom() >= zoomLevel) {
+            clearInterval(zoomAnimationInterval);
+            return;
+        }
+
+        let currentZoom = map.getZoom();
+        let newZoom = currentZoom + 0;
+
+        map.setZoom(newZoom);
+
+        let bounds = map.getBounds();
+        let ne = bounds.getNorthEast();
+        let sw = bounds.getSouthWest();
+        let center = new google.maps.LatLng(
+            (ne.lat() + sw.lat()) / 2,
+            (ne.lng() + sw.lng()) / 2
+        );
+
+        map.panTo(center);
+    }, 1000);
+}
 
 function initStreetView(data) {
     originalPos = data.location.latLng;
@@ -320,7 +398,7 @@ function initStreetView(data) {
 
     setTimeout(function () {
         loader.style.display = "none";
-    }, 500);    
+    }, 500);
 }
 
 async function countdown() {
@@ -330,7 +408,7 @@ async function countdown() {
         interval = setInterval(() => {
             if (seconds === 0) {
                 clearInterval(interval)
-                loseRoundScreen()
+                socket.emit('timerDown', salonCode)
             } else if (stopCount) {
                 clearInterval(interval)
                 resolve();
@@ -392,3 +470,4 @@ document.getElementsByClassName('exit')[0].addEventListener('click', function ()
         window.location.href = '/';
     }
 })
+        

@@ -77,8 +77,6 @@ io.on('connection', (socket) => {
             players: [{ id: socket.id, pseudo, guess: false, distance: null, guessPos: null, color: generatePlayerColor() }],
             inProgress: false,
         };
-
-        console.log(salon.players)
         
         // Rejoindre la room correspondant au code du salon
         socket.join(code);
@@ -202,6 +200,12 @@ io.on('connection', (socket) => {
         if (salon.players.every((player) => player.guess)) {
             io.to(salonCode).emit('round-ended', salon.players);
         }
+    });
+
+    socket.on('timerDown', (salonCode) => {
+        const salon = salons.find((s) => s.code === salonCode);
+
+        io.to(salonCode).emit('round-ended', salon.players);
     });
 });
 
