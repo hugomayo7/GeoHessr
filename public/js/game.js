@@ -339,8 +339,20 @@ guessButton.addEventListener("click", function () {
     }
 });
 
-document.getElementsByClassName('exit')[0].addEventListener('click', function () {
-    if (window.confirm('Voulez-vous vraiment quitter la partie ?')) {
-        window.location.href = '/';
-    }
-})
+const exitElements = document.getElementsByClassName('exit');
+
+for (let i = 0; i < exitElements.length; i++) {
+    exitElements[i].addEventListener('click', function () {
+        if (window.confirm('Voulez-vous vraiment quitter la partie ?')) {
+            window.location.href = '/';
+        }
+    });
+}
+
+const exitButtonsModal = document.getElementsByClassName('modalExit');
+
+for (let i = 0; i < exitButtonsModal.length; i++) {
+    exitButtonsModal[i].addEventListener('click', function () {
+            window.location.href = '/';
+    });
+}

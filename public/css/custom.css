@@ -400,6 +400,12 @@ li {
     background-color: #b60000;
 }
 
+.modalExit {
+    margin-top: 15px;
+    background-color: #b60000 !important;
+    border: none;
+}
+
 .waitlist {
     display: flex;
     justify-content: start;

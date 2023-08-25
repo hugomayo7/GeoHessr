@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
         const salon = {
             code,
             creator: pseudo,
-            players: [{ id: socket.id, pseudo, guess: false, distance: null, guessPos: null, color: generatePlayerColor() }],
+            players: [{ id: socket.id, pseudo, host: true, guess: false, distance: null, guessPos: null, color: generatePlayerColor() }],
             inProgress: false,
         };
         
@@ -98,8 +98,7 @@ io.on('connection', (socket) => {
         // Vérifie si le salon existe
         const salon = salons.find((s) => s.code === code);
         if (!salon) {
-            console.log(`Salon ${code} non trouvé`);
-            // Salon non trouvé, tu peux gérer cette situation comme tu le souhaites
+            // Salon non trouvé
             return;
         }
         
@@ -115,13 +114,13 @@ io.on('connection', (socket) => {
         socket.join(code);
         
         // Ajoute le joueur au salon
-        salon.players.push({ id: socket.id, pseudo });
+        salon.players.push({ id: socket.id, pseudo, guess: false, distance: null, guessPos: null, host: false, color: generatePlayerColor() });
         
         // Informe les joueurs du salon qu'un joueur a rejoint (sauf le joueur qui rejoint)
         salon.players.forEach((player) => {
             if (player.id !== socket.id) {
                 const participantSocket = io.sockets.sockets.get(player.id);
-                participantSocket.emit('player-joined', { id: socket.id, pseudo, color: generatePlayerColor() });
+                participantSocket.emit('player-joined', { id: socket.id, pseudo });
             }
         });
         
@@ -180,7 +179,7 @@ io.on('connection', (socket) => {
                 salon.inProgress = true;
                 
                 // Générer des coordonnées et les renvoyer à tous les joueurs du salon
-                const coords = generateCoords().then((coords) => {;
+                const coords = generateCoords().then((coords) => {
                     io.to(salonCode).emit('game-started', coords)
                 });
                 
@@ -195,17 +194,31 @@ io.on('connection', (socket) => {
         const joueur = salon.players.find((player) => player.id === socket.id);
         joueur.guess = true;
         joueur.distance = distance;
-        joueur.guessPos = guessPos
-        
+        joueur.guessPos = guessPos;
+
         if (salon.players.every((player) => player.guess)) {
-            io.to(salonCode).emit('round-ended', salon.players);
+            io.to(salonCode).emit('round-ended', salon);
         }
     });
 
     socket.on('timerDown', (salonCode) => {
         const salon = salons.find((s) => s.code === salonCode);
 
-        io.to(salonCode).emit('round-ended', salon.players);
+        io.to(salonCode).emit('round-ended', salon);
+    });
+
+    socket.on('next-round', (salon) => {
+        salon.players.forEach((player) => {
+            player.guess = false;
+            player.distance = null;
+            player.guessPos = null;
+        });
+
+        const coords = generateCoords().then((coords) => {
+            io.to(salon.code).emit('game-started', coords)
+        });
+
+        io.to(salon.code).emit('game-loading');
     });
 });
 

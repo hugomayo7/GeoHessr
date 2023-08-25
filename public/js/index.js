@@ -9,6 +9,7 @@ let minimap;
 let resultMap;
 let stopCount = false;
 let interval = null;
+let isHost = false;
 
 let salonCode = null;
 
@@ -61,6 +62,7 @@ socket.on('salon-created', (code) => {
     document.getElementById('room-players').innerHTML = `<li>${pseudoInputCreate.value} (vous)</li>`;
     let startButton = document.getElementsByClassName('buttons-wait')[0]
     startButton.innerHTML += `<div id="start"><button type="button">Lancer</button></div>`;
+    isHost = true;
 
     document.getElementById('leaveButton').addEventListener('click', function () {
         window.location.href = "/";
@@ -177,10 +179,17 @@ socket.on('host-disconnected', () => {
     page2.style.display = 'flex';
     page3.style.display = 'none';
     page4.style.display = 'none';
+    document.getElementById("endRound").style.display = "none";
+
 });
 
 // Écouter l'événement 'game-started' côté client
 socket.on('game-started', (coords) => {
+    resultMap = null;
+    originalPos = null;
+    stopCount = false;
+    timeDis.innerHTML = "02:30";
+
     let sv = new google.maps.StreetViewService();
     sv.getPanoramaByLocation(new google.maps.LatLng(coords.lat, coords.lng), 500, initStreetView);
 });
@@ -191,13 +200,16 @@ socket.on('game-start-failed', (errorMessage) => {
 });
 
 socket.on('game-loading', () => {
+    document.getElementById("endRound").style.display = "none";
+
     loader.style.display = 'flex';
 });
 
-socket.on('round-ended', (players) => {
+socket.on('round-ended', (salon) => {
     clearInterval(interval);
+    stopCount = true;
 
-    players.forEach((player) => {
+    salon.players.forEach((player) => {
         if (player.id === socket.id) {
             // Afficher la distance du joueur actuel
             if (player.distance) {
@@ -205,6 +217,20 @@ socket.on('round-ended', (players) => {
             } else {
                 document.getElementById('guessDistance').previousSibling.previousSibling.textContent = 'Vous n\'avez pas deviné la distance';
             }
+        }
+
+        if (player.host && player.id === socket.id && !document.getElementById('nextRound')) {
+            let modalContent = document.querySelector('.modal-content');
+            let nextRoundButton = document.createElement('button');
+            nextRoundButton.id = 'nextRound';
+            nextRoundButton.textContent = 'Round suivant';
+            nextRoundButton.classList.add('next-round-button');
+
+            nextRoundButton.addEventListener('click', function () {
+                socket.emit('next-round', salon);
+            });
+
+            modalContent.appendChild(nextRoundButton);
         }
     });
 
@@ -234,8 +260,8 @@ socket.on('round-ended', (players) => {
     });
 
     // afficher le marker de chaque joueur
-    players.forEach((player) => {
-        if (player.distance) {
+    salon.players.forEach((player) => {
+        if (player.guess) {
             new google.maps.Marker({
                 position: player.guessPos,
                 map: resultMap,
@@ -249,7 +275,7 @@ socket.on('round-ended', (players) => {
         }
     });
 
-    zoomOnResult(resultMap, players)
+    zoomOnResult(resultMap, salon.players)
 })
 
 function drawLine(map, playerPos) {
@@ -292,7 +318,9 @@ function drawLine(map, playerPos) {
 function zoomOnResult(map, players) {
     let bounds = new google.maps.LatLngBounds();
     players.forEach(player => {
-        bounds.extend(player.guessPos);
+        if (player.guess) {
+            bounds.extend(player.guessPos);
+        }
     });
     bounds.extend(originalPos);
 
@@ -332,6 +360,9 @@ function initStreetView(data) {
     loader.style.display = 'none';
     page3.style.display = 'none';
     page4.style.display = 'flex';
+    document.getElementById("guessButton").style.display = "none";
+
+    resultMap = null;
 
     if (panorama) {
         panorama.setPosition(data.location.latLng);
@@ -402,13 +433,16 @@ function initStreetView(data) {
 }
 
 async function countdown() {
-    let seconds = 150; // 3 minutes en secondes
+    let seconds = 5; // 3 minutes en secondes
 
     return new Promise((resolve, reject) => {
         interval = setInterval(() => {
             if (seconds === 0) {
                 clearInterval(interval)
-                socket.emit('timerDown', salonCode)
+                if (isHost) {
+                    socket.emit('timerDown', salonCode)
+                }
+                stopCount = true;
             } else if (stopCount) {
                 clearInterval(interval)
                 resolve();
@@ -458,7 +492,6 @@ function validGuess(guessPos, originalPos) {
 // guess position
 guessButton.addEventListener("click", function () {
     if (guessMarker) {
-        stopCount = true;
         const markerPosition = guessMarker.getPosition();
 
         validGuess(markerPosition, originalPos);
