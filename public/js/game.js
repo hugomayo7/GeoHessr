@@ -353,6 +353,6 @@ const exitButtonsModal = document.getElementsByClassName('modalExit');
 
 for (let i = 0; i < exitButtonsModal.length; i++) {
     exitButtonsModal[i].addEventListener('click', function () {
-            window.location.href = '/';
+        window.location.href = '/';
     });
 }

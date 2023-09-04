@@ -212,10 +212,12 @@ socket.on('round-ended', (salon) => {
     salon.players.forEach((player) => {
         if (player.id === socket.id) {
             // Afficher la distance du joueur actuel
+            console.log(player.distance)
             if (player.distance) {
                 document.getElementById('guessDistance').textContent = `${player.distance.toFixed(1)} km`;
             } else {
                 document.getElementById('guessDistance').previousSibling.previousSibling.textContent = 'Vous n\'avez pas deviné la distance';
+                document.getElementById('guessDistance').textContent = '';
             }
         }
 
@@ -227,10 +229,13 @@ socket.on('round-ended', (salon) => {
             nextRoundButton.classList.add('next-round-button');
 
             nextRoundButton.addEventListener('click', function () {
-                socket.emit('next-round', salon);
+                socket.emit('next-round', salon.code);
             });
 
-            modalContent.appendChild(nextRoundButton);
+            let quitButton = modalContent.querySelector('.modalExit');
+
+            // Insérez le bouton "nextRound" avant le bouton "Quitter"
+            modalContent.insertBefore(nextRoundButton, quitButton);
         }
     });
 
@@ -503,4 +508,12 @@ document.getElementsByClassName('exit')[0].addEventListener('click', function ()
         window.location.href = '/';
     }
 })
-        
+
+const exitButtonsModal = document.getElementsByClassName('modalExit');
+
+for (let i = 0; i < exitButtonsModal.length; i++) {
+    exitButtonsModal[i].addEventListener('click', function () {
+        window.location.href = '/';
+        socket.disconnect();
+    });
+}
