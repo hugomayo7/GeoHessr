@@ -28,7 +28,7 @@ app.set('views', path.join(__dirname, 'templates'));
 app.use('/bootstrap/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
 app.use('/bootstrap/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
 app.use('/jquery', express.static(path.join(__dirname, 'node_modules/jquery/dist')));
-app.use(express.static('public'));
+app.use('/static', express.static('public'));
 
 app.get('/favicon.ico', (req, res) => res.status(204));
 
