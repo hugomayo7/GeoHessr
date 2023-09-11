@@ -438,7 +438,7 @@ function initStreetView(data) {
 }
 
 async function countdown() {
-    let seconds = 5; // 3 minutes en secondes
+    let seconds = 150; // 3 minutes en secondes
 
     return new Promise((resolve, reject) => {
         interval = setInterval(() => {
