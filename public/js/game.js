@@ -61,7 +61,7 @@ function initStreetView(data, status) {
         originalPos = data.location.latLng;
 
         clearInterval(interval);
-        countdown()
+        countdown();
 
         if (panorama) {
             panorama.setPosition(data.location.latLng);
@@ -245,6 +245,8 @@ function nextRound() {
     document.getElementById("loseRound").style.display = "none";
     document.getElementById("guessButton").style.display = "none";
     document.getElementById("pano").style.display = "none";
+    stopCount = false;
+    timeDis.innerHTML = "02:30";
 
     generateRandomPoint();
 }
@@ -324,7 +326,7 @@ function zoomOnLoseResult(map) {
 }
 
 async function countdown() {
-    let seconds = 150; // 3 minutes en secondes
+    let seconds = 150; // 2mn30 minutes en secondes
 
     return new Promise((resolve, reject) => {
         interval = setInterval(() => {

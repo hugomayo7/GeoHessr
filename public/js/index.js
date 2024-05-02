@@ -360,7 +360,7 @@ function initStreetView(data) {
     originalPos = data.location.latLng;
 
     clearInterval(interval);
-    countdown()
+    countdown();
 
     loader.style.display = 'none';
     page3.style.display = 'none';
