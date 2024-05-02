@@ -11,20 +11,48 @@ let interval = null;
 let timeDis = document.getElementById("timeDis");
 let guessButton = document.getElementById("guessButton");
 
-function generateRandomPoint() {
-    resultMap = null;
-    originalPos = null;
-    stopCount = false;
-    timeDis.innerHTML = "02:30";
+async function loadGeoJSON(url) {
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
+}
+
+function calculateBBox(polygon) {
+    const coords = polygon.geometry.coordinates;
+    let minX, minY, maxX, maxY;
+
+    coords.forEach((coord) => {
+        coord[0].forEach((point) => {
+            if (minX === undefined || minX > point[0]) minX = point[0];
+            if (maxX === undefined || maxX < point[0]) maxX = point[0];
+            if (minY === undefined || minY > point[1]) minY = point[1];
+            if (maxY === undefined || maxY < point[1]) maxY = point[1];
+        });
+    });
+
+    return [minX, minY, maxX, maxY];
+}
+
+async function generateRandomPoint() {
+    const geojsonData = await loadGeoJSON('../land.geojson');
+
+    // Sélectionnez un polygone terrestre aléatoire
+    const randomIndex = Math.floor(Math.random() * geojsonData.features.length);
+    const randomPolygon = geojsonData.features[randomIndex];
+
+    // Générez un point aléatoire à l'intérieur du polygone sélectionné
+    let point = turf.randomPoint(1, { bbox: turf.bbox(randomPolygon) }).features[0].geometry.coordinates;
 
     let sv = new google.maps.StreetViewService();
     sv.getPanoramaByLocation(
-        new google.maps.LatLng(Math.random() * 180 - 90, Math.random() * 360 - 180), 500, initStreetView
+        new google.maps.LatLng(point[1], point[0]), 500, function(data, status) {
+            initStreetView(data, status);
+        }
     );
 }
 
 function initStreetView(data, status) {
-    if (status === google.maps.StreetViewStatus.OK && data.copyright === "© 2023 Google") {
+    if (status === google.maps.StreetViewStatus.OK && (data.copyright === "© 2023 Google" || data.copyright === "© 2024 Google")) {
         originalPos = data.location.latLng;
 
         clearInterval(interval);
