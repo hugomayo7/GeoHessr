@@ -4,10 +4,15 @@ const express = require('express');
 
 const app = express();
 const http = require('http').createServer(app);
+const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const {emit} = require('process');
 const port = 8080;
+
+const turf = require('@turf/turf');
+const geojsonPath = path.join(__dirname, 'public', 'land.geojson');
+const landData = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
 
 require('dotenv').config();
 
@@ -236,24 +241,23 @@ io.on('connection', (socket) => {
             io.to(salon.code).emit('game-started', coords)
         });
 
-        salon.players.forEach((player) => {
-            console.log(player);
-        })
-
         io.to(salon.code).emit('game-loading');
     });
 });
 
 async function generateCoords() {
-    let lat, lng;
-    let validCoords = false;
+    let point, validCoords = false;
 
     do {
-        lat = Math.random() * 180 - 90;
-        lng = Math.random() * 360 - 180;
+        // Sélectionne un polygone au hasard
+        const randomIndex = Math.floor(Math.random() * landData.features.length);
+        const randomPolygon = landData.features[randomIndex];
 
-        const streetViewURL = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&key=${apiKey}`;
+        // Génère un point aléatoire dans le polygone sélectionné
+        point = turf.randomPoint(1, { bbox: turf.bbox(randomPolygon) }).features[0].geometry.coordinates;
 
+        // Vérifier si le point généré est valide via l'API Street View
+        const streetViewURL = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${point[1]},${point[0]}&key=${apiKey}`;
         const response = await axios.get(streetViewURL);
         const data = response.data;
 
@@ -262,7 +266,7 @@ async function generateCoords() {
         }
     } while (!validCoords);
 
-    return {lat, lng};
+    return { lat: point[1], lng: point[0] };
 }
 
 function generatePlayerColor() {
