@@ -52,7 +52,12 @@ async function generateRandomPoint() {
 }
 
 function initStreetView(data, status) {
-    if (status === google.maps.StreetViewStatus.OK && (data.copyright === "© 2023 Google" || data.copyright === "© 2024 Google")) {
+    if (status === google.maps.StreetViewStatus.OK && (
+        data.copyright === "© 2020 Google" ||
+        data.copyright === "© 2021 Google" ||
+        data.copyright === "© 2022 Google" ||
+        data.copyright === "© 2023 Google" ||
+        data.copyright === "© 2024 Google")) {
         originalPos = data.location.latLng;
 
         clearInterval(interval);
