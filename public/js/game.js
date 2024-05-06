@@ -36,8 +36,8 @@ function calculateBBox(polygon) {
 async function generateRandomPoint() {
     const geojsonData = await loadGeoJSON('../land.geojson');
 
-    // Sélectionnez un polygone terrestre aléatoire
-    const randomIndex = Math.floor(Math.random() * geojsonData.features.length);
+    // Sélectionnez un polygone terrestre aléatoire avec une pondération exponentielle
+    const randomIndex = weightedRandomIndex(geojsonData.features);
     const randomPolygon = geojsonData.features[randomIndex];
 
     // Générez un point aléatoire à l'intérieur du polygone sélectionné
@@ -49,6 +49,24 @@ async function generateRandomPoint() {
             initStreetView(data, status);
         }
     );
+}
+
+// Fonction pour sélectionner un index pondéré aléatoire en fonction de la taille des polygones
+function weightedRandomIndex(features) {
+    // Calculer les poids en fonction de la taille des polygones avec une pondération exponentielle
+    const weights = features.map(feature => Math.pow(turf.area(feature.geometry), 2));
+
+    // Sélectionner un index pondéré aléatoire en fonction de ces poids
+    const totalWeight = weights.reduce((acc, weight) => acc + weight, 0);
+    const random = Math.random() * totalWeight;
+    let weightSum = 0;
+    for (let i = 0; i < weights.length; i++) {
+        weightSum += weights[i];
+        if (random <= weightSum) {
+            return i;
+        }
+    }
+    return features.length - 1; // Au cas où il y aurait une erreur de précision
 }
 
 function initStreetView(data, status) {

@@ -249,24 +249,43 @@ async function generateCoords() {
     let point, validCoords = false;
 
     do {
-        // Sélectionne un polygone au hasard
-        const randomIndex = Math.floor(Math.random() * landData.features.length);
+        // Sélection aléatoire d'un polygone en fonction de sa taille
+        const randomIndex = weightedRandomIndex(landData.features);
         const randomPolygon = landData.features[randomIndex];
 
-        // Génère un point aléatoire dans le polygone sélectionné
+        // Génération aléatoire d'un point à l'intérieur du polygone
         point = turf.randomPoint(1, { bbox: turf.bbox(randomPolygon) }).features[0].geometry.coordinates;
 
-        // Vérifier si le point généré est valide via l'API Street View
+        // Vérification de la validité du point en vérifiant s'il existe une image Street View à cet emplacement
         const streetViewURL = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${point[1]},${point[0]}&key=${apiKey}`;
         const response = await axios.get(streetViewURL);
         const data = response.data;
 
+        // Si l'emplacement a une image Street View valide, les coordonnées sont valides
         if (data.status === 'OK' && data.copyright === '© Google') {
             validCoords = true;
         }
     } while (!validCoords);
 
     return { lat: point[1], lng: point[0] };
+}
+
+// Fonction pour sélectionner un index pondéré aléatoire en fonction de la taille des polygones
+function weightedRandomIndex(features) {
+    // Calculer les poids en fonction de la taille des polygones avec une pondération exponentielle
+    const weights = features.map(feature => Math.pow(turf.area(feature.geometry), 2));
+
+    // Sélectionner un index pondéré aléatoire en fonction de ces poids
+    const totalWeight = weights.reduce((acc, weight) => acc + weight, 0);
+    const random = Math.random() * totalWeight;
+    let weightSum = 0;
+    for (let i = 0; i < weights.length; i++) {
+        weightSum += weights[i];
+        if (random <= weightSum) {
+            return i;
+        }
+    }
+    return features.length - 1; // Au cas où il y aurait une erreur de précision
 }
 
 function generatePlayerColor() {
