@@ -1,9 +1,7 @@
 const {Socket} = require('socket.io');
 
 const express = require('express');
-
-const app = express();
-const http = require('http').createServer(app);
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -16,10 +14,10 @@ const landData = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
 
 require('dotenv').config();
 
-/**
- * @type {Socket}
- */
-const io = require('socket.io')(http, {
+const app = express();
+const server = http.createServer(app);
+const { Server } = require('socket.io');
+const io = new Server(server, {
     cors: {
         origin: '*',
     }
@@ -50,7 +48,7 @@ app.get('/salons', (req, res) => {
     res.json(salons);
 });
 
-http.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
