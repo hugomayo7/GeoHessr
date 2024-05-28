@@ -1,17 +1,9 @@
-const {Socket} = require('socket.io');
-
 const express = require('express');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-const {emit} = require('process');
-const port = 8080;
-
 const turf = require('@turf/turf');
-const geojsonPath = path.join(__dirname, 'public', 'land.geojson');
-const landData = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
-
 require('dotenv').config();
 
 const app = express();
@@ -22,6 +14,10 @@ const io = new Server(server, {
         origin: '*',
     }
 });
+const port = 8080;
+
+const geojsonPath = path.join(__dirname, 'public', 'land.geojson');
+const landData = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
 
 const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -36,14 +32,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/favicon.ico', (req, res) => res.status(204));
 
 app.get('/', (req, res) => {
-    res.render('index', {apiKey});
+    res.render('index', { apiKey });
 });
 
 app.get('/game', (req, res) => {
-    res.render('game', {apiKey});
+    res.render('game', { apiKey });
 });
 
-// obtenir les salons existants
 app.get('/salons', (req, res) => {
     res.json(salons);
 });
