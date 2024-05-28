@@ -17,22 +17,6 @@ async function loadGeoJSON(url) {
     return data;
 }
 
-function calculateBBox(polygon) {
-    const coords = polygon.geometry.coordinates;
-    let minX, minY, maxX, maxY;
-
-    coords.forEach((coord) => {
-        coord[0].forEach((point) => {
-            if (minX === undefined || minX > point[0]) minX = point[0];
-            if (maxX === undefined || maxX < point[0]) maxX = point[0];
-            if (minY === undefined || minY > point[1]) minY = point[1];
-            if (maxY === undefined || maxY < point[1]) maxY = point[1];
-        });
-    });
-
-    return [minX, minY, maxX, maxY];
-}
-
 async function generateRandomPoint() {
     const geojsonData = await loadGeoJSON('../land.geojson');
 

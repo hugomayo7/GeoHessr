@@ -517,3 +517,7 @@ for (let i = 0; i < exitButtonsModal.length; i++) {
         socket.disconnect();
     });
 }
+
+window.addEventListener('beforeunload', function () {
+    socket.disconnect();
+});
